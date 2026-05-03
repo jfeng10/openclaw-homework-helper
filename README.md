@@ -1,13 +1,1 @@
-openclaw-homework-helper/
-  AGENTS.md
-  requirements.txt
-  app/
-    main.py
-    telegram_handler.py
-    gemini_client.py
-    db.py
-  tests/
-  .agents/
-    skills/
-      homework_helper/
-        SKILL.md
+Help K12 parents check homework and generate review and study plan weekly.
