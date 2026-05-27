@@ -1,21 +1,25 @@
 import json
 import logging
+import os
 import sqlite3
 from pathlib import Path
+
+from app.privacy import safe_db_label
 
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "homework.db"
+DB_PATH = Path(os.getenv("HOMEWORK_DB_PATH", BASE_DIR / "homework.db")).expanduser()
 
 
 def get_conn():
-    logger.debug("Opening SQLite connection", extra={"db_path": str(DB_PATH)})
+    logger.debug("Opening SQLite connection", extra={"db": safe_db_label(DB_PATH)})
     return sqlite3.connect(DB_PATH)
 
 
 def init_db():
-    logger.info("Initializing SQLite schema", extra={"db_path": str(DB_PATH)})
+    logger.info("Initializing SQLite schema", extra={"db": safe_db_label(DB_PATH)})
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with get_conn() as conn:
         c = conn.cursor()
 
@@ -29,7 +33,7 @@ def init_db():
             )
         """)
         conn.commit()
-    logger.debug("SQLite schema ready", extra={"db_path": str(DB_PATH)})
+    logger.debug("SQLite schema ready", extra={"db": safe_db_label(DB_PATH)})
 
 
 def log_homework(child_name, question, answer_json):
@@ -37,8 +41,8 @@ def log_homework(child_name, question, answer_json):
     logger.info(
         "Writing homework assessment to SQLite",
         extra={
-            "db_path": str(DB_PATH),
-            "child_name": child_name,
+            "db": safe_db_label(DB_PATH),
+            "has_child_identifier": bool(child_name),
             "question_length": len(question or ""),
             "answer_length": len(payload),
         },
@@ -55,18 +59,18 @@ def log_homework(child_name, question, answer_json):
             conn.commit()
             row_id = c.lastrowid
     except Exception:
-        logger.exception("SQLite write failed", extra={"db_path": str(DB_PATH)})
+        logger.exception("SQLite write failed", extra={"db": safe_db_label(DB_PATH)})
         raise
 
     logger.info(
         "Homework assessment stored",
-        extra={"db_path": str(DB_PATH), "homework_log_id": row_id},
+        extra={"db": safe_db_label(DB_PATH), "homework_log_id": row_id},
     )
     return row_id
 
 
 def get_all_logs():
-    logger.debug("Reading all homework logs", extra={"db_path": str(DB_PATH)})
+    logger.debug("Reading all homework logs", extra={"db": safe_db_label(DB_PATH)})
     with get_conn() as conn:
         c = conn.cursor()
         c.execute("""

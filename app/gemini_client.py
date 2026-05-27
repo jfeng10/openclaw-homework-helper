@@ -84,12 +84,6 @@ Question:
             "common_mistake": "parse_failed"
         }
 
-
-
-# def get_client():
-#     return genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-
 def analyze_homework(user, text, image_bytes=None):
     client = get_client()
 

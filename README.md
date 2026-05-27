@@ -41,6 +41,8 @@ Optional:
 
 ```bash
 export LOG_LEVEL=DEBUG
+export HOMEWORK_DB_PATH="/path/outside/repo/homework.db"
+export USER_ID_SALT="long-random-private-value"
 ```
 
 Install dependencies:
@@ -91,7 +93,7 @@ python3 -m app.cli --image /absolute/path/to/homework.jpg --text "check this wor
 
 ## Expected Logs
 
-Logs are emitted to stderr so stdout remains structured JSON.
+Logs are emitted to stderr so stdout remains structured JSON. Logs intentionally avoid Telegram file IDs, chat IDs, usernames, full local image paths, and child identifiers.
 
 Expected successful path:
 
@@ -129,9 +131,16 @@ ERROR app.main Homework workflow failed
 - Replaced legacy lowercase `skill.md` with modern `SKILL.md` files that use YAML frontmatter.
 - Added `skills/homework-helper/SKILL.md` because OpenClaw workspace discovery checks `<workspace>/skills`.
 - Removed deprecated Python plugin entrypoint assumptions. The skill now uses shell-command execution via `python3 -m app.cli`.
-- SQLite path handling now uses `Path(__file__).resolve().parent.parent / "homework.db"` for deterministic storage.
+- SQLite path handling now supports `HOMEWORK_DB_PATH` while defaulting to local `homework.db`.
 - Existing `homework_logs` schema is preserved.
 - Gemini and Telegram integration code remain in place, with logging and shared workflow invocation added.
+
+## Security Notes
+
+- Keep `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, and `USER_ID_SALT` in local environment variables or a private `.env` file only.
+- Copy `.env.example` for local setup; never commit real `.env` files.
+- Prefer `HOMEWORK_DB_PATH` outside the repository because SQLite rows can contain children’s information, homework text, and model responses.
+- Treat generated logs and SQLite files as sensitive local data.
 
 ## Why SQLite Writes May Have Failed Before
 

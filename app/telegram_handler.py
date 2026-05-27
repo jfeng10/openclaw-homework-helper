@@ -5,6 +5,7 @@ import os
 from telegram.ext import ApplicationBuilder, MessageHandler, filters
 
 from app.main import format_reply, run
+from app.privacy import pseudonymous_telegram_user
 
 logger = logging.getLogger(__name__)
 
@@ -12,14 +13,14 @@ logger = logging.getLogger(__name__)
 def _telegram_event(update):
     message = update.message
     user = message.from_user
-    username = user.username or user.full_name or str(user.id)
+    user_label = pseudonymous_telegram_user(user.id if user else None)
     photo = []
 
     if message.photo:
         photo = [{"file_id": item.file_id, "width": item.width, "height": item.height} for item in message.photo]
 
     event = {
-        "user": username,
+        "user": user_label,
         "text": message.text or message.caption or "",
     }
 
@@ -30,14 +31,14 @@ def _telegram_event(update):
 
 
 async def handle_text(update, context):
-    logger.info("Telegram text message received", extra={"chat_id": update.effective_chat.id})
+    logger.info("Telegram text message received")
     event = _telegram_event(update)
     result = await asyncio.to_thread(run, event)
     await update.message.reply_text(format_reply(result).get("answer", "received"))
 
 
 async def handle_photo(update, context):
-    logger.info("Telegram image message received", extra={"chat_id": update.effective_chat.id})
+    logger.info("Telegram image message received")
     event = _telegram_event(update)
     result = await asyncio.to_thread(run, event)
     reply = format_reply(result).get("answer") or result.get("error") or "Unable to analyze this homework image."

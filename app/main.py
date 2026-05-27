@@ -36,14 +36,13 @@ def run(event):
         result["metadata"].update(
             {
                 "sqlite_row_id": row_id,
-                "user": user,
                 "workflow": "app.main.run",
                 "persisted": True,
             }
         )
         logger.info(
             "Homework workflow completed",
-            extra={"user": user, "sqlite_row_id": row_id, "has_image": image_bytes is not None},
+            extra={"sqlite_row_id": row_id, "has_image": image_bytes is not None},
         )
         return result
     except Exception as exc:
@@ -64,16 +63,16 @@ def _load_image_bytes(event):
 
     image_path = event.get("image_path")
     if image_path:
-        logger.info("Reading homework image from local path", extra={"image_path": image_path})
+        logger.info("Reading homework image from local path")
         with open(image_path, "rb") as image_file:
             data = image_file.read()
-        logger.info("Local homework image loaded", extra={"image_path": image_path, "image_bytes": len(data)})
+        logger.info("Local homework image loaded", extra={"image_bytes": len(data)})
         return data
 
     photo = event.get("photo")
     if photo:
         file_id = _extract_telegram_file_id(photo)
-        logger.info("Telegram image receipt normalized", extra={"file_id": file_id})
+        logger.info("Telegram image receipt normalized")
         return download_telegram_image(
             file_id,
             os.getenv("TELEGRAM_BOT_TOKEN")
