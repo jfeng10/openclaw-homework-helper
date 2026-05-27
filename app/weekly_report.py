@@ -1,12 +1,18 @@
 import json
+import logging
+
 from app.db import get_all_logs
 from app.gemini_client import get_client
 
+logger = logging.getLogger(__name__)
+
 
 def generate_weekly_report():
+    logger.info("Generating weekly homework report")
     logs = get_all_logs()
 
     if not logs:
+        logger.info("No homework logs available for weekly report")
         return {
             "summary": "No data this week.",
             "actions": []
@@ -37,6 +43,8 @@ Return JSON ONLY:
 }}
 """
 
+    client = get_client()
+    logger.info("Calling Gemini for weekly homework report", extra={"log_count": len(logs)})
     response = client.models.generate_content(
         model="gemini-3.1-pro-preview",
         contents=prompt

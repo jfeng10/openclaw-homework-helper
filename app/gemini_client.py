@@ -1,9 +1,17 @@
 # app/gemini_client.py
 
+import json
+import logging
 import os
-from google import genai
 
+logger = logging.getLogger(__name__)
 _client = None
+GEMINI_FLASH_MODEL = "gemini-3.1-flash-lite-preview"
+GEMINI_PRO_MODEL = "gemini-3.1-pro-preview"
+
+
+def _coerce_response_text(response):
+    return getattr(response, "text", "") or ""
 
 
 def get_client():
@@ -17,9 +25,15 @@ def get_client():
         api_key = os.getenv("GEMINI_API_KEY")
 
         if not api_key:
+            logger.error("Gemini client initialization failed: GEMINI_API_KEY not set")
             raise ValueError("GEMINI_API_KEY not set")
 
+        from google import genai
+
+        logger.info("Initializing Gemini client")
         _client = genai.Client(api_key=api_key)
+    else:
+        logger.debug("Reusing Gemini client")
 
     return _client
 
@@ -45,18 +59,25 @@ Question:
 {text}
 """
 
+    logger.info(
+        "Calling Gemini for text homework analysis",
+        extra={"model": GEMINI_FLASH_MODEL, "text_length": len(text or "")},
+    )
     response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview",
+        model=GEMINI_FLASH_MODEL,
         contents=prompt
     )
+    response_text = _coerce_response_text(response)
 
-    import json
     try:
-        return json.loads(response.text)
-    except:
+        parsed = json.loads(response_text)
+        logger.debug("Gemini text response parsed as JSON")
+        return parsed
+    except Exception:
+        logger.exception("Failed to parse Gemini text response as JSON")
         return {
             "answer": "",
-            "explanation_en": response.text,
+            "explanation_en": response_text,
             "explanation_zh": "",
             "topic": "unknown",
             "difficulty": "unknown",
@@ -98,11 +119,26 @@ Task:
             }
         )
 
+    logger.info(
+        "Calling Gemini for homework assessment",
+        extra={
+            "model": GEMINI_FLASH_MODEL,
+            "user": user,
+            "text_length": len(text or ""),
+            "has_image": image_bytes is not None,
+            "image_bytes": len(image_bytes or b""),
+        },
+    )
     response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview",
+        model=GEMINI_FLASH_MODEL,
         contents=contents
     )
 
+    response_text = _coerce_response_text(response)
+    logger.info(
+        "Gemini homework assessment complete",
+        extra={"response_length": len(response_text), "user": user},
+    )
     return {
-        "answer": response.text
+        "answer": response_text
     }
